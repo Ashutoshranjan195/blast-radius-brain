@@ -231,9 +231,3 @@ Run `pytest -v` to validate:
 - **Event**: Graph Hacks: Give Your AI Agents Real Context (by WeMakeDevs + FalkorDB)
 - **Track**: 03 — Company Brain
 - **Database**: FalkorDB (Cypher-compatible GraphBLAS engine)
-
----
-
-## 🤖 AI Assistant Disclosure (Rule 11 Compliance)
-
-In accordance with Hackathon Rule 11, **Google Antigravity / Gemini** was used as an AI pair programming assistant for boilerplate code, test scaffolding, and video pipeline automation. All graph schema modeling, Cypher traversal queries (`DEPENDS_ON*1..5`, socio-technical joins), evidence contracts, and acceptance validations were verified, executed, and benchmarked by the team against live FalkorDB instances.
