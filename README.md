@@ -5,7 +5,7 @@
 ## 🌐 Live Demo & Deliverables
 
 - **Live Public App**: [https://bring-intake-greater-beautiful.trycloudflare.com](https://bring-intake-greater-beautiful.trycloudflare.com)
-- **Demo Video (3-min H.264/AAC, 1080p)**: [`capture/demo.mp4`](capture/demo.mp4)
+- **Demo Video (3-min Walkthrough)**: [YouTube Link](https://youtu.be/OFr0tyOPqvo) | Local: [`capture/demo.mp4`](capture/demo.mp4)
 - **Demo Script**: [`capture/demo_script.md`](capture/demo_script.md)
 - **Side-Prize Blog Post**: [`blog_post.md`](blog_post.md)
 - **Production Audit & Logs**: [`capture/VIDEO_LOG.md`](capture/VIDEO_LOG.md) | [`capture/CAPTURE_LOG.md`](capture/CAPTURE_LOG.md)
