@@ -168,6 +168,6 @@ By combining FalkorDB's sub-millisecond Cypher traversals with deterministic rou
 ---
 
 ### Project Links & Submission
-- **Live Demo**: [https://tune-explosion-stainless-nicholas.trycloudflare.com](https://tune-explosion-stainless-nicholas.trycloudflare.com)
+- **Live Demo**: [https://bring-intake-greater-beautiful.trycloudflare.com](https://bring-intake-greater-beautiful.trycloudflare.com)
 - **GitHub Repository**: [https://github.com/Ashutoshranjan195/blast-radius-brain](https://github.com/Ashutoshranjan195/blast-radius-brain)
 - **Track**: 03 — Company Brain (Graph Hacks: Give Your AI Agents Real Context)
