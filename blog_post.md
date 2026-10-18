@@ -17,9 +17,9 @@ Here is why vector search breaks down on organizational architecture questions�
 
 ---
 
-## The Vector RAG Trap: Similarity is Not Topology
+## 1. The Problem: Similarity is Not Topology
 
-Vector RAG converts unstructured text chunks into high-dimensional embeddings and performs cosine similarity search. When you ask:
+Vector RAG operates by chunking text, generating high-dimensional embeddings, and performing cosine similarity search. When you ask:
 
 > *"What breaks if ledger-service goes down?"*
 
@@ -28,58 +28,35 @@ A vector database searches for documents containing words semantically similar t
 - A Slack thread from six months ago mentioning a database failover.
 - A README mentioning *"In case of breakage..."*
 
-What it **cannot** do is compute transitive closure across an architecture diagram:
-- It doesn't know that `checkout-ui` depends on `payments-api`.
-- It doesn't know that `payments-api` depends on `ledger-service`.
-- It cannot traverse: `checkout-ui` $\rightarrow$ `payments-api` $\rightarrow$ `ledger-service`.
+What it **cannot** do is compute transitive closure across an architecture diagram. It doesn't know that `checkout-ui` depends on `payments-api`, and that `payments-api` depends on `ledger-service`. It cannot traverse the directed relationship:
+$$\text{checkout-ui} \longrightarrow \text{payments-api} \longrightarrow \text{ledger-service}$$
 
-**Vector embeddings flatten topology.** A relationship path is not a semantic similarity; it is a directed graph traversal. When you ask an LLM to "figure out" multi-hop dependencies from vector snippets, you invite hallucinations, omitted dependencies, and unverified assumptions during an active outage.
+Vector embeddings flatten topology into similarity scores. A dependency path is not a semantic similarity; it is a directed graph traversal. When you ask an LLM to "figure out" multi-hop dependencies from vector text chunks, you invite hallucinations, missed cascading failures, and unverified assumptions during an active outage.
 
 ---
 
-## The Solution: A Graph-Load-Bearing Agent ("Blast Radius Brain")
+## 2. The Data Model: Socio-Technical Enterprise Graph
 
-To solve this, we built **Blast Radius Brain**: an agent over a simulated enterprise technology and team graph ("Aurora Labs"). 
+To solve this, we built **Blast Radius Brain**: an agent over a simulated enterprise technology and team graph ("Aurora Labs").
 
 The design principle is simple:
 > **The graph is load-bearing. The LLM is only a router and explainer. Every answer must be a deterministic Cypher traversal with verifiable provenance.**
 
-![Blast Radius Brain UI](screenshot.png)
-*Figure 1: Blast Radius Brain interface showing visual path chips, executed Cypher, and verified graph rows.*
+![Data Model Architecture](capture/screenshots/10_architecture.png)
+*Figure 1: Aurora Labs Data Model — 5 Node Labels (`Person`, `Project`, `System`, `Decision`, `Doc`) and 9 Directed Relationship Types.*
+
+Our schema connects infrastructure telemetry, cross-functional engineering teams, and architectural decision records into a unified graph:
+- **`System`** (10 nodes): Microservices, frontends, batches, gateways (`ledger-service`, `payments-api`, `checkout-ui`, etc.).
+- **`Person`** (14 nodes): Engineers, leads, SREs, managers (`Maya Chen`, `Diego Ramos`, `Nora Haddad`).
+- **`Project`** (8 nodes): Active initiatives (`Helios`, `Atlas`, `Zephyr`, etc.).
+- **`Decision`** (5 nodes): Architectural Decision Records (ADRs), rollout pauses, deprecations.
+- **`Doc`** (5 nodes): Incident runbooks, design docs, postmortems.
 
 ---
 
-## The Aurora Labs Data Model
+## 3. The Three Queries: Deterministic Cypher Traversals
 
-Our schema models the socio-technical graph of an engineering organization across 5 node types and 8 relationship types:
-
-```
- (Person) ---[:WORKS_ON]---> (Project) ---[:USES]---> (System)
-    |                           |                       |
-    +-------[:LEADS]------------+                       ^
-    |                                            [:DEPENDS_ON]
-    +-------[:AUTHORED]--------> (Doc)                  |
-    |                             |                     |
-    |                             +------[:ABOUT]-------+
-    |                                                   |
-    +-------[:DECIDED]---------> (Decision)             |
-                                  |                     |
-                                  +---[:DECIDED_IN]-----+
-                                  +---[:ABOUT]----------+
-```
-
-### Nodes:
-- **`System`**: Microservices, frontends, batches, gateways (e.g., `ledger-service`, `payments-api`, `checkout-ui`).
-- **`Person`**: Engineers, leads, SREs, managers (e.g., `Maya Chen`, `Diego Ramos`, `Nora Haddad`).
-- **`Project`**: Active business initiatives (e.g., `Helios`, `Atlas`, `Zephyr`).
-- **`Decision`**: Architectural decision records (ADRs), rollout pauses, deprecations.
-- **`Doc`**: Runbooks, postmortems, migration guides.
-
----
-
-## The Three Mission-Critical Queries
-
-### 1. Multi-Hop Blast Radius Traversal
+### Query 1: Multi-Hop Blast Radius Traversal
 When `ledger-service` fails, what breaks downstream? We execute a variable-length incoming traversal (`<-[:DEPENDS_ON*1..5]-`):
 
 ```cypher
@@ -90,18 +67,14 @@ RETURN downstream.name AS affected_system,
        [r IN relationships(path) | type(r)] AS rel_path
 ORDER BY hops, affected_system
 ```
+*Traversal Explanation*: Follows reverse dependency edges up to 5 hops deep from the epicenter service to discover every downstream consumer, keeping the canonical shortest hop count.
 
-#### What Happens:
-In FalkorDB, this evaluates across sparse adjacency matrices in under 2ms. FalkorDB returns:
+FalkorDB returns:
 - **1-hop direct dependencies**: `billing-cron`, `payments-api`, `reporting-batch`
 - **2-hop cascading dependencies**: `checkout-ui`, `mobile-gateway`, `refund-worker`
 
-The agent extracts the canonical minimum-hop paths and returns visual path chips:
-- `ledger-service → payments-api → checkout-ui`
-- `ledger-service → payments-api → refund-worker`
-
-### 2. Team Expertise Join
-Who is the best person to paged for `ledger-service`? Don't rely on stale team wiki pages; query active project commitment:
+### Query 2: Team Expertise Join
+Who is the best engineer to page for `ledger-service`? We rank engineers by active project commitment:
 
 ```cypher
 MATCH (p:Person)-[:WORKS_ON]->(proj:Project)-[:USES]->(s:System {name: $system})
@@ -111,11 +84,11 @@ RETURN p.name AS person, p.role AS role, p.team AS team,
 ORDER BY score DESC, person
 LIMIT 5
 ```
+*Traversal Explanation*: Joins engineers to projects and projects to systems, aggregating active project footprint to identify domain expertise without guesswork.
 
-#### What Happens:
-The graph aggregates all engineers working on projects that utilize `ledger-service`. It ranks **Maya Chen** (Staff Engineer) first with a score of 3 (`Helios`, `Atlas`, `Zephyr`), followed by **Diego Ramos** and **Marco Silva**.
+FalkorDB ranks **Maya Chen** (Staff Engineer, Payments) first with a score of 3 (`Helios`, `Atlas`, `Zephyr`), followed by **Diego Ramos** and **Marco Silva**.
 
-### 3. Decision Provenance & Context
+### Query 3: Decision Provenance & Context
 Why was a project paused or modified?
 
 ```cypher
@@ -132,18 +105,19 @@ RETURN dec.title AS decision, dec.date AS date, dec.status AS status,
 ORDER BY date DESC
 LIMIT 5
 ```
+*Traversal Explanation*: Traces formal decision records directly to the authoring person, the parent project, and the affected infrastructure systems.
 
-#### What Happens:
 Querying `Helios` uncovers:
 > *"Pause Helios rollout" (Status: paused, Date: 2026-09-12). Decided by Nora Haddad for project Helios affecting ledger-service. Summary: "Rollout paused after ledger-service latency regression in staging."*
 
-We immediately correlate the infrastructure regression with an existing managerial decision record.
-
 ---
 
-## The Zero-Hallucination "Evidence Contract"
+## 4. The Evidence Contract: Zero Hallucination Guarantee
 
-LLM agents are notorious for fabricating details. In Blast Radius Brain, every tool call strictly returns an **Evidence Contract**:
+LLM agents are notorious for fabricating details. In Blast Radius Brain, every tool execution strictly returns an **Evidence Contract**:
+
+![Blast Radius Query & Evidence](capture/screenshots/02_blast_radius.png)
+*Figure 2: Verified Blast Radius Query Result showing Natural Language Answer, Path Chips, Cypher Query, Parameters, and Raw Rows.*
 
 ```json
 {
@@ -163,24 +137,37 @@ LLM agents are notorious for fabricating details. In Blast Radius Brain, every t
 }
 ```
 
-If an LLM API key (OpenAI/Anthropic) is configured, the LLM serves purely to map natural language queries to tool parameters. If no key is set, the system falls back to a 100% deterministic keyword router. **The app never fails due to an API outage or missing token.**
+Why does this matter? During high-stakes incidents, engineers cannot trust a black-box LLM. By rendering interactive **path chips** (`ledger-service → payments-api → checkout-ui`) and displaying raw database rows, the agent delivers an irrefutable audit trail.
 
 ---
 
-## Why FalkorDB?
+## 5. The Honest-Unknown Case: Safe Rejection
 
-1. **Cypher Compatibility**: Full open Cypher support makes queries intuitive and readable.
-2. **GraphBLAS Acceleration**: FalkorDB leverages linear algebra (matrix multiplication) over graph adjacency matrices, executing 5-hop path explorations in single-digit milliseconds.
-3. **Idempotent Ingestion**: With Cypher's `MERGE` and `UNWIND`, database initialization scripts can run repeatedly in CI/CD without creating duplicate entities or broken relationships.
-4. **Developer Experience**: One docker command gives you both the Redis-compatible graph engine and an interactive visual browser on port 3000.
+![Honest Unknown Query Result](capture/screenshots/05_honest_unknown.png)
+*Figure 3: Honest Unknown Test for "Who owns Project Phoenix?" — Safe Rejection Without Hallucination.*
+
+When a user asks about an entity that does not exist in the graph (e.g., *"Who owns Project Phoenix?"*), standard LLMs invent plausible-sounding owners. Blast Radius Brain's deterministic router dynamically checks known graph entities. When an entity is absent, it immediately rejects the query with an honest clarification message instead of inventing Cypher or fabricating people.
+
+---
+
+## 6. Under the Hood: FalkorDB Browser
+
+![FalkorDB Browser](capture/screenshots/06_graph_browser.png)
+*Figure 4: FalkorDB Web Browser running live on localhost:3000.*
+
+FalkorDB executes these graph algorithms via sparse GraphBLAS matrix multiplications inside Redis. Multi-hop queries that would time out in naive recursive joins complete in under 2 milliseconds.
 
 ---
 
-## Conclusion
+## 7. What I Learned
 
-Vector embeddings are great for unstructured semantic search, but enterprise operations, security blast radius, and dependency management require mathematical certainty.
+Connected operational data requires a connected data model. Vector embeddings are extraordinary for semantic text search, but for structural questions—dependency blast radius, team ownership joins, and governance audit trails—**the graph must be the reasoning layer**.
 
-By making the knowledge graph load-bearing and using Cypher traversal as the source of truth, **Blast Radius Brain** provides incident responders with verifiable, hallucination-free intelligence when seconds count.
+By combining FalkorDB's sub-millisecond Cypher traversals with deterministic routing and an auditable evidence contract, **Blast Radius Brain** provides incident responders with verifiable truth when every second counts.
 
 ---
-*Built with FalkorDB, Streamlit, and Python. Open-source repository: [Blast Radius Brain](https://github.com/)*
+
+### Project Links & Submission
+- **Live Demo**: [https://tune-explosion-stainless-nicholas.trycloudflare.com](https://tune-explosion-stainless-nicholas.trycloudflare.com)
+- **GitHub Repository**: [https://github.com/Ashutoshranjan195/blast-radius-brain](https://github.com/Ashutoshranjan195/blast-radius-brain)
+- **Track**: 03 — Company Brain (Graph Hacks: Give Your AI Agents Real Context)

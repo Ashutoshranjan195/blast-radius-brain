@@ -1,0 +1,65 @@
+[
+  {
+    "scene": 1,
+    "start_time": "00:00:01",
+    "end_time": "00:00:14",
+    "position": "top-banner",
+    "text": "Vector RAG gives you similar documents. It cannot tell you what breaks."
+  },
+  {
+    "scene": 2,
+    "start_time": "00:00:16",
+    "end_time": "00:00:48",
+    "position": "callout-badges",
+    "text": "payments-api: 1 hop | checkout-ui: 2 hops | ledger-service -> payments-api -> checkout-ui"
+  },
+  {
+    "scene": 3,
+    "start_time": "00:00:51",
+    "end_time": "00:01:04",
+    "position": "lower-third",
+    "text": "The answer is a traversal — not a similarity search."
+  },
+  {
+    "scene": 4,
+    "start_time": "00:01:06",
+    "end_time": "00:01:24",
+    "position": "callout-badge",
+    "text": "Top Expert: Maya Chen | 3 Projects (Helios, Atlas, Zephyr) | Graph Join: Person-WORKS_ON-Project-USES-System"
+  },
+  {
+    "scene": 5,
+    "start_time": "00:01:26",
+    "end_time": "00:01:44",
+    "position": "callout-badge",
+    "text": "Audit Provenance: Nora Haddad -> Pause Helios rollout -> ledger-service regression"
+  },
+  {
+    "scene": 6,
+    "start_time": "00:01:46",
+    "end_time": "00:01:59",
+    "position": "lower-third",
+    "text": "When the graph doesn't have it, the agent says so. Zero hallucination."
+  },
+  {
+    "scene": 7,
+    "start_time": "00:02:01",
+    "end_time": "00:02:29",
+    "position": "top-banner",
+    "text": "The graph is the reasoning layer. FalkorDB Browser at localhost:3000."
+  },
+  {
+    "scene": 8,
+    "start_time": "00:02:31",
+    "end_time": "00:02:49",
+    "position": "lower-third",
+    "text": "Idempotent seed. Deterministic tools. Passing tests (6/6)."
+  },
+  {
+    "scene": 9,
+    "start_time": "00:02:50",
+    "end_time": "00:03:00",
+    "position": "center-endcard",
+    "text": "Blast Radius Brain — Track 03: Company Brain | https://github.com/Ashutoshranjan195/blast-radius-brain"
+  }
+]

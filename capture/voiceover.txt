@@ -1,0 +1,26 @@
+Scene 1:
+Vector RAG gives you similar documents. It cannot tell you what breaks when a service goes down. This is Blast Radius Brain — a company brain where the graph does the reasoning.
+
+Scene 2:
+The agent traverses the dependency graph. payments-api breaks immediately. checkout-ui, two hops away, also breaks. Every affected system comes with the exact path the graph followed.
+
+Scene 3:
+This is not a guess. This is the exact Cypher query. A variable-length traversal over DEPENDS_ON edges. Deterministic, auditable, fast enough to run on every agent step.
+
+Scene 4:
+The same graph ranks experts by project overlap. Maya Chen has worked on three projects that use ledger-service. No embeddings. Just a join the graph already stores.
+
+Scene 5:
+Every decision traces back to its author, the project it was made in, and the systems it affects. A decision with an audit trail built into the graph.
+
+Scene 6:
+And when the graph doesn't know, it says so. No hallucination. The evidence layer is honest about missing data.
+
+Scene 7:
+This is the graph underneath. Every answer you saw is a traversal over these nodes and edges. The FalkorDB Browser shows the same query running live — and the same subgraph the agent used.
+
+Scene 8:
+The seed is idempotent — running it twice produces the same graph. The tools are deterministic. The tests pass. This is a working system, not a mockup.
+
+Scene 9:
+Blast Radius Brain. A company brain where the graph is the reasoning layer — and every answer ships with its evidence.

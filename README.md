@@ -2,6 +2,31 @@
 
 > **Blast Radius Brain** is a deterministic graph intelligence agent built on **FalkorDB** for incident response and socio-technical enterprise context. Unlike Vector RAG, which flattens dependencies into fuzzy semantic similarities, Blast Radius Brain answers complex multi-hop operational questions—downstream outage cascading ("What breaks?"), cross-functional expertise ("Who knows this?"), and architectural governance ("Who decided this and why?")—using mathematically exact Cypher traversals backed by an auditable evidence contract with zero hallucinations.
 
+## 🌐 Live Demo & Deliverables
+
+- **Live Public App**: [https://bring-intake-greater-beautiful.trycloudflare.com](https://bring-intake-greater-beautiful.trycloudflare.com)
+- **Demo Video (3-min H.264/AAC, 1080p)**: [`capture/demo.mp4`](capture/demo.mp4)
+- **Demo Script**: [`capture/demo_script.md`](capture/demo_script.md)
+- **Side-Prize Blog Post**: [`blog_post.md`](blog_post.md)
+- **Production Audit & Logs**: [`capture/VIDEO_LOG.md`](capture/VIDEO_LOG.md) | [`capture/CAPTURE_LOG.md`](capture/CAPTURE_LOG.md)
+
+---
+
+## 📸 Screenshots Gallery
+
+| Screen | Description | File |
+|---|---|---|
+| **01 Home** | Title, metrics (42 nodes, 85 rels), quick questions | [`capture/screenshots/01_home.png`](capture/screenshots/01_home.png) |
+| **02 Blast Radius** | `ledger-service` downstream cascade with path chips & Cypher | [`capture/screenshots/02_blast_radius.png`](capture/screenshots/02_blast_radius.png) |
+| **03 Expert Finder** | Maya Chen ranked #1 across 3 cross-functional projects | [`capture/screenshots/03_expert_finder.png`](capture/screenshots/03_expert_finder.png) |
+| **04 Decision Provenance** | Nora Haddad "Pause Helios rollout" ADR with rationale | [`capture/screenshots/04_decision.png`](capture/screenshots/04_decision.png) |
+| **05 Honest Unknown** | Zero hallucination on unknown entity "Project Phoenix" | [`capture/screenshots/05_honest_unknown.png`](capture/screenshots/05_honest_unknown.png) |
+| **06 Graph Browser** | FalkorDB visual graph explorer on `:3000` | [`capture/screenshots/06_graph_browser.png`](capture/screenshots/06_graph_browser.png) |
+| **07 Blast Radius Subgraph** | FalkorDB browser highlighting downstream outage subgraph | [`capture/screenshots/07_graph_ledger_highlight.png`](capture/screenshots/07_graph_ledger_highlight.png) |
+| **08 Idempotent Seeding** | Terminal verifying exact 42 nodes & 85 rels twice | [`capture/screenshots/08_seed_counts.png`](capture/screenshots/08_seed_counts.png) |
+| **09 Pytest Acceptance** | Terminal showing 6/6 tests passing in 1.14s | [`capture/screenshots/09_tests_passing.png`](capture/screenshots/09_tests_passing.png) |
+| **10 Architecture Diagram** | Complete graph schema (5 node labels, 9 edge types) | [`capture/screenshots/10_architecture.png`](capture/screenshots/10_architecture.png) |
+
 ---
 
 ## 🚀 Quickstart (Under 2 Minutes)

@@ -1,0 +1,989 @@
+EEEEEE                                                                   [100%]
+=================================== ERRORS ====================================
+___________________ ERROR at setup of test_seed_idempotency ___________________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+_____________ ERROR at setup of test_blast_radius_ledger_service ______________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+_____________ ERROR at setup of test_expert_finder_ledger_service _____________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+______________ ERROR at setup of test_decision_provenance_helios ______________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+____________ ERROR at setup of test_router_deterministic_fallback _____________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+__________________ ERROR at setup of test_evidence_contract ___________________
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+>               sock = self._connect()
+                       ^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\redis\connection.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\redis\connection.py:1617: in _connect
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+
+    def _connect(self):
+        "Create a TCP socket connection"
+        # we want to mimic what socket.create_connection does to support
+        # ipv4/ipv6, but we want to set options prior to calling
+        # socket.connect()
+        err = None
+    
+        for res in socket.getaddrinfo(
+            self.host, self.port, self.socket_type, socket.SOCK_STREAM
+        ):
+            family, socktype, proto, canonname, socket_address = res
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                # TCP_NODELAY
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    
+                # TCP_KEEPALIVE
+                if self.socket_keepalive:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    for k, v in self.socket_keepalive_options.items():
+                        sock.setsockopt(socket.IPPROTO_TCP, k, v)
+    
+                # set the socket_connect_timeout before we connect
+                sock.settimeout(self.socket_connect_timeout)
+    
+                # connect
+>               sock.connect(socket_address)
+E               ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+.venv\Lib\site-packages\redis\connection.py:1601: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def ensure_seeded_graph():
+        """Ensure graph is seeded before tests run."""
+>       seed_graph()
+
+tests\test_tools.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+seed.py:232: in seed_graph
+    g = get_graph()
+        ^^^^^^^^^^^
+seed.py:227: in get_graph
+    db = FalkorDB(host=HOST, port=PORT)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\falkordb.py:132: in __init__
+    if Is_Sentinel(conn):
+       ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\falkordb\sentinel.py:6: in Is_Sentinel
+    info = conn.info(section="server")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\commands\core.py:1692: in info
+    return self.execute_command("INFO", section, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:867: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\client.py:873: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\redis\connection.py:3273: in get_connection
+    connection.connect()
+.venv\Lib\site-packages\redis\connection.py:1028: in connect
+    self.retry.call_with_retry(
+.venv\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+.venv\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+.venv\Lib\site-packages\redis\connection.py:1029: in <lambda>
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <redis.connection.Connection(host=localhost,port=6379,db=0)>
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+>           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+
+.venv\Lib\site-packages\redis\connection.py:1077: ConnectionError
+=========================== short test summary info ===========================
+ERROR tests/test_tools.py::test_seed_idempotency - redis.exceptions.Connectio...
+ERROR tests/test_tools.py::test_blast_radius_ledger_service - redis.exception...
+ERROR tests/test_tools.py::test_expert_finder_ledger_service - redis.exceptio...
+ERROR tests/test_tools.py::test_decision_provenance_helios - redis.exceptions...
+ERROR tests/test_tools.py::test_router_deterministic_fallback - redis.excepti...
+ERROR tests/test_tools.py::test_evidence_contract - redis.exceptions.Connecti...
+6 errors in 8.48s
+
