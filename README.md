@@ -7,7 +7,7 @@
 - **Live Public App**: [https://bring-intake-greater-beautiful.trycloudflare.com](https://bring-intake-greater-beautiful.trycloudflare.com)
 - **Demo Video (3-min Walkthrough)**: [YouTube Link](https://youtu.be/OFr0tyOPqvo) | Local: [`capture/demo.mp4`](capture/demo.mp4)
 - **Demo Script**: [`capture/demo_script.md`](capture/demo_script.md)
-- **Side-Prize Blog Post**: [`blog_post.md`](blog_post.md)
+- **Side-Prize Blog Post**: [Dev.to Article](https://dev.to/ashutoshranjan/why-vector-rag-fails-blast-radius-questions-and-the-4-hop-cypher-query-that-fixes-it-68b) | Local: [`blog_post.md`](blog_post.md)
 - **Production Audit & Logs**: [`capture/VIDEO_LOG.md`](capture/VIDEO_LOG.md) | [`capture/CAPTURE_LOG.md`](capture/CAPTURE_LOG.md)
 
 ---
